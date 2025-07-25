@@ -1,9 +1,17 @@
 import { HermesClient } from "@pythnetwork/hermes-client"
 import type { PriceUpdate } from "@pythnetwork/hermes-client"
+import { PAIRS } from "./feeds_type.js"
+
+type Pair = keyof typeof PAIRS
+type PairId = typeof PAIRS[Pair]
+
+function getPairId(pair: Pair): PairId {
+  return PAIRS[pair]
+}
 
 interface PetasosOptions {
   url?: string;
-  priceIds: string[]
+  pairs: Pair[]
   maxReconnectAttempts?: number
   parsed?: boolean
 }
@@ -26,7 +34,9 @@ export class Petasos {
       throw new Error("HermesClient is not initialized")
     }
 
-    this.#eventSource = await this.#client.getPriceUpdatesStream(this.#options.priceIds, {
+    const priceIds = this.#options.pairs.map(getPairId)
+
+    this.#eventSource = await this.#client.getPriceUpdatesStream(priceIds, {
       parsed: this.#options.parsed || false,
       allowUnordered: false,
     })
