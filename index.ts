@@ -65,7 +65,10 @@ export class Petasos {
   }
 
   #reconnect() {
-    if (this.#options.maxReconnectAttempts && this.#reconnectAttempts <= this.#options.maxReconnectAttempts) {
+    if (
+      this.#options.maxReconnectAttempts
+      && this.#reconnectAttempts < this.#options.maxReconnectAttempts
+    ) {
       this.#reconnectAttempts++
       console.log(`Reconnecting... (${this.#reconnectAttempts})`)
       this.#connect()
