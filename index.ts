@@ -10,7 +10,7 @@ function getPairId(pair: Pair): PairId {
 }
 
 interface PetasosOptions {
-  url?: string;
+  url?: string
   pairs: Pair[]
   maxReconnectAttempts?: number
   parsed?: boolean
@@ -24,8 +24,11 @@ export class Petasos {
   #priceUpdateHandler: ((data: PriceUpdate) => void) | undefined
 
   constructor(options: PetasosOptions) {
+    if (typeof options.maxReconnectAttempts === 'undefined') {
+      options.maxReconnectAttempts = 5
+    }
+    const url = options.url ?? "https://hermes.pyth.network"
     this.#options = options
-    const url = this.#options.url || "https://hermes.pyth.network"
     this.#client = new HermesClient(url, {})
   }
 
@@ -62,7 +65,7 @@ export class Petasos {
   }
 
   #reconnect() {
-    if (this.#reconnectAttempts < (this.#options.maxReconnectAttempts || 5)) {
+    if (this.#options.maxReconnectAttempts && this.#reconnectAttempts <= this.#options.maxReconnectAttempts) {
       this.#reconnectAttempts++
       console.log(`Reconnecting... (${this.#reconnectAttempts})`)
       this.#connect()
