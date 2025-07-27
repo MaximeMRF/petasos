@@ -1,9 +1,17 @@
 import { HermesClient } from "@pythnetwork/hermes-client"
 import type { PriceUpdate } from "@pythnetwork/hermes-client"
+import { PAIRS } from "./feeds_type.js"
+
+type Pair = keyof typeof PAIRS
+type PairId = typeof PAIRS[Pair]
+
+function getPairId(pair: Pair): PairId {
+  return PAIRS[pair]
+}
 
 interface PetasosOptions {
-  url?: string;
-  priceIds: string[]
+  url?: string
+  pairs: Pair[]
   maxReconnectAttempts?: number
   parsed?: boolean
 }
@@ -16,8 +24,11 @@ export class Petasos {
   #priceUpdateHandler: ((data: PriceUpdate) => void) | undefined
 
   constructor(options: PetasosOptions) {
+    if (typeof options.maxReconnectAttempts === 'undefined') {
+      options.maxReconnectAttempts = 5
+    }
+    const url = options.url ?? "https://hermes.pyth.network"
     this.#options = options
-    const url = this.#options.url || "https://hermes.pyth.network"
     this.#client = new HermesClient(url, {})
   }
 
@@ -26,7 +37,9 @@ export class Petasos {
       throw new Error("HermesClient is not initialized")
     }
 
-    this.#eventSource = await this.#client.getPriceUpdatesStream(this.#options.priceIds, {
+    const priceIds = this.#options.pairs.map(getPairId)
+
+    this.#eventSource = await this.#client.getPriceUpdatesStream(priceIds, {
       parsed: this.#options.parsed || false,
       allowUnordered: false,
     })
@@ -52,7 +65,10 @@ export class Petasos {
   }
 
   #reconnect() {
-    if (this.#reconnectAttempts < (this.#options.maxReconnectAttempts || 5)) {
+    if (
+      this.#options.maxReconnectAttempts
+      && this.#reconnectAttempts < this.#options.maxReconnectAttempts
+    ) {
       this.#reconnectAttempts++
       console.log(`Reconnecting... (${this.#reconnectAttempts})`)
       this.#connect()
