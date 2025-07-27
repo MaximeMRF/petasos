@@ -1,6 +1,7 @@
-# @maximemrf/petasos
+# Petasos
 
 A modern, powerful and experimental client for the [Pyth Network Hermes service](https://www.pyth.network/).
+“Petasos” refers to the wide-brimmed hat worn by the Greek god Hermes, the messenger of the gods.
 
 ## Disclaimer
 
@@ -12,6 +13,7 @@ Don't hesitate to open an issue if you find a bug or have a feature request.
 - Subscribe to crypto feeds using human-readable trading pairs with IDE autocompletion instead of raw price IDs
 - Handles SSE (Server-Sent Events) to focus on product creation and not on connection management
 - Easy and powerful API for subscribing to price updates
+- Automatically parse prices
 
 ## Installation
 
@@ -19,7 +21,7 @@ Don't hesitate to open an issue if you find a bug or have a feature request.
 npm install @maximemrf/petasos
 ```
 
-## Example
+## Example without autoParse
 
 ```ts
 import { Petasos } from "@maximemrf/petasos"
@@ -27,7 +29,6 @@ import { Petasos } from "@maximemrf/petasos"
 const petasos = new Petasos({
   pairs: ["BTC/USD", "SOL/USD"],
   maxReconnectAttempts: 10,
-  parsed: true,
 })
 
 petasos.getPriceUpdates((data) => {
@@ -49,6 +50,27 @@ await petasos.listen()
 const feeds = await petasos.getClient().getPriceFeeds()
 ```
 
+## Example with autoParse
+
+```ts
+import { Petasos } from "@maximemrf/petasos"
+
+const petasos = new Petasos({
+  pairs: ["BTC/USD", "SOL/USD", "EUR/USD"],
+  maxReconnectAttempts: 10,
+  // set to true
+  autoParse: true,
+})
+
+petasos.getPriceUpdates((data) => {
+  console.log(data['BTC/USD'])
+  // you can convert sol to euro by doing that:
+  console.log(data['SOL/USD'] / data['EUR/USD'])
+})
+
+await petasos.listen()
+```
+
 ## API
 
 ### `Petasos(options: PetasosOptions)`
@@ -56,7 +78,7 @@ const feeds = await petasos.getClient().getPriceFeeds()
 - `url?`: string – Hermes service URL (default: `https://hermes.pyth.network`)
 - `pairs`: string[] – List of supported trading pairs (e.g. "BTC/USD"), strictly typed with autocompletion support.
 - `maxReconnectAttempts?`: number – Maximum reconnect attempts (default: 5)
-- `parsed?`: boolean – Whether to parse updates
+- `autoParse?`: boolean –  If enabled, automatically parses price updates into a key-value structure accessible via data["SOL/USD"], data["BTC/USD"], etc
 
 ### Methods
 
