@@ -1,6 +1,6 @@
 # @maximemrf/petasos
 
-A modern and experimental client for the [Pyth Network Hermes service](https://www.pyth.network/).
+A modern, powerful and experimental client for the [Pyth Network Hermes service](https://www.pyth.network/).
 
 ## Disclaimer
 
@@ -9,8 +9,9 @@ Don't hesitate to open an issue if you find a bug or have a feature request.
 
 ## Features
 
+- Subscribe to crypto feeds using human-readable trading pairs with IDE autocompletion instead of raw price IDs
 - Handles SSE (Server-Sent Events) to focus on product creation and not on connection management
-- Simple API for subscribing to price updates
+- Easy and powerful API for subscribing to price updates
 
 ## Installation
 
@@ -23,20 +24,13 @@ npm install @maximemrf/petasos
 ```ts
 import { Petasos } from "@maximemrf/petasos"
 
-const priceIds = [
-  // Find price IDs at https://pyth.network/developers/price-feed-ids
-  "0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43", // BTC/USD
-  "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace", // ETH/USD
-]
-
 const petasos = new Petasos({
-  priceIds,
-  maxReconnectAttempts: 5,
+  pairs: ["BTC/USD", "SOL/USD"],
+  maxReconnectAttempts: 10,
   parsed: true,
 })
 
 petasos.getPriceUpdates((data) => {
-  console.log("Received price update:")
   if (!data?.parsed) {
     console.error("No parsed data available")
     return
@@ -60,7 +54,7 @@ const feeds = await petasos.getClient().getPriceFeeds()
 ### `Petasos(options: PetasosOptions)`
 
 - `url?`: string – Hermes service URL (default: `https://hermes.pyth.network`)
-- `priceIds`: string[] – List of price IDs to subscribe to (list can be found at [Pyth Network Price Feed IDs](https://www.pyth.network/price-feeds))
+- `pairs`: string[] – List of supported trading pairs (e.g. "BTC/USD"), strictly typed with autocompletion support.
 - `maxReconnectAttempts?`: number – Maximum reconnect attempts (default: 5)
 - `parsed?`: boolean – Whether to parse updates
 
