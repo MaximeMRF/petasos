@@ -1,6 +1,7 @@
-# @maximemrf/petasos
+# Petasos
 
-A modern and experimental client for the [Pyth Network Hermes service](https://www.pyth.network/).
+A modern, powerful and experimental client for the [Pyth Network Hermes service](https://www.pyth.network/).
+“Petasos” refers to the wide-brimmed hat worn by the Greek god Hermes, the messenger of the gods.
 
 ## Disclaimer
 
@@ -9,8 +10,10 @@ Don't hesitate to open an issue if you find a bug or have a feature request.
 
 ## Features
 
+- Subscribe to crypto feeds using human-readable trading pairs with IDE autocompletion instead of raw price IDs
 - Handles SSE (Server-Sent Events) to focus on product creation and not on connection management
-- Simple API for subscribing to price updates
+- Easy and powerful API for subscribing to price updates
+- Automatically parse prices
 
 ## Installation
 
@@ -18,25 +21,17 @@ Don't hesitate to open an issue if you find a bug or have a feature request.
 npm install @maximemrf/petasos
 ```
 
-## Example
+## Example without autoParse
 
 ```ts
 import { Petasos } from "@maximemrf/petasos"
 
-const priceIds = [
-  // Find price IDs at https://pyth.network/developers/price-feed-ids
-  "0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43", // BTC/USD
-  "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace", // ETH/USD
-]
-
 const petasos = new Petasos({
-  priceIds,
-  maxReconnectAttempts: 5,
-  parsed: true,
+  pairs: ["BTC/USD", "SOL/USD"],
+  maxReconnectAttempts: 10,
 })
 
 petasos.getPriceUpdates((data) => {
-  console.log("Received price update:")
   if (!data?.parsed) {
     console.error("No parsed data available")
     return
@@ -55,14 +50,35 @@ await petasos.listen()
 const feeds = await petasos.getClient().getPriceFeeds()
 ```
 
+## Example with autoParse
+
+```ts
+import { Petasos } from "@maximemrf/petasos"
+
+const petasos = new Petasos({
+  pairs: ["BTC/USD", "SOL/USD", "EUR/USD"],
+  maxReconnectAttempts: 10,
+  // set to true
+  autoParse: true,
+})
+
+petasos.getPriceUpdates((data) => {
+  console.log(data['BTC/USD'])
+  // you can convert sol to euro by doing that:
+  console.log(data['SOL/USD'] / data['EUR/USD'])
+})
+
+await petasos.listen()
+```
+
 ## API
 
 ### `Petasos(options: PetasosOptions)`
 
 - `url?`: string – Hermes service URL (default: `https://hermes.pyth.network`)
-- `priceIds`: string[] – List of price IDs to subscribe to (list can be found at [Pyth Network Price Feed IDs](https://www.pyth.network/price-feeds))
+- `pairs`: string[] – List of supported trading pairs (e.g. "BTC/USD"), strictly typed with autocompletion support.
 - `maxReconnectAttempts?`: number – Maximum reconnect attempts (default: 5)
-- `parsed?`: boolean – Whether to parse updates
+- `autoParse?`: boolean –  If enabled, automatically parses price updates into a key-value structure accessible via data["SOL/USD"], data["BTC/USD"], etc
 
 ### Methods
 

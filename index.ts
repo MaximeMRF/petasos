@@ -1,11 +1,29 @@
 import { HermesClient } from "@pythnetwork/hermes-client"
 import type { PriceUpdate } from "@pythnetwork/hermes-client"
+import { PAIRS } from "./feeds_type.js"
+
+type Pair = keyof typeof PAIRS
+type PairId = typeof PAIRS[Pair]
+
+const ID_TO_PAIR = Object.fromEntries(
+  Object.entries(PAIRS).map(([k, v]) => [v, k])
+) as Record<PairId, Pair>
+
+function getPairId(pair: Pair): PairId {
+  return PAIRS[pair]
+}
+
+function getPair(priceId: PairId): Pair {
+  const pair = ID_TO_PAIR[priceId]
+  if (!pair) throw new Error(`Unknown priceId: ${priceId}`)
+  return pair
+}
 
 interface PetasosOptions {
-  url?: string;
-  priceIds: string[]
+  url?: string
+  pairs: Pair[]
   maxReconnectAttempts?: number
-  parsed?: boolean
+  autoParse?: boolean
 }
 
 export class Petasos {
@@ -13,11 +31,14 @@ export class Petasos {
   #eventSource: EventSource | undefined
   #reconnectAttempts: number = 0
   #client: HermesClient
-  #priceUpdateHandler: ((data: PriceUpdate) => void) | undefined
+  #priceUpdateHandler: ((data: PriceUpdate | Record<Pair, PairId>) => void) | undefined
 
   constructor(options: PetasosOptions) {
+    if (typeof options.maxReconnectAttempts === 'undefined') {
+      options.maxReconnectAttempts = 5
+    }
+    const url = options.url ?? "https://hermes.pyth.network"
     this.#options = options
-    const url = this.#options.url || "https://hermes.pyth.network"
     this.#client = new HermesClient(url, {})
   }
 
@@ -26,8 +47,10 @@ export class Petasos {
       throw new Error("HermesClient is not initialized")
     }
 
-    this.#eventSource = await this.#client.getPriceUpdatesStream(this.#options.priceIds, {
-      parsed: this.#options.parsed || false,
+    const priceIds = this.#options.pairs.map(getPairId)
+
+    this.#eventSource = await this.#client.getPriceUpdatesStream(priceIds, {
+      parsed: true,
       allowUnordered: false,
     })
 
@@ -35,8 +58,29 @@ export class Petasos {
     this.#eventSource.addEventListener('error', this.#onError.bind(this))
   }
 
+  #parseData(data: PriceUpdate) {
+    const prices: Record<string, number> = {}
+
+    if (!data.parsed) {
+      throw new Error("Property 'parsed' doesn't exist on the object data when using autoParse")
+    }
+
+    for (const feed of data.parsed) {
+      const pair = getPair(feed.id as PairId)
+      const rawPrice = Number(feed.price.price)
+      const expo = feed.price.expo
+      const price = rawPrice * 10 ** expo
+      prices[pair] = price
+    }
+    return prices
+  }
+
   #onMessage(event: MessageEvent) {
-    const data = JSON.parse(event.data)
+    let data = JSON.parse(event.data)
+
+    if (this.#options.autoParse) {
+      data = this.#parseData(data)
+    }
 
     if (this.#priceUpdateHandler) {
       try {
@@ -52,7 +96,10 @@ export class Petasos {
   }
 
   #reconnect() {
-    if (this.#reconnectAttempts < (this.#options.maxReconnectAttempts || 5)) {
+    if (
+      this.#options.maxReconnectAttempts
+      && this.#reconnectAttempts < this.#options.maxReconnectAttempts
+    ) {
       this.#reconnectAttempts++
       console.log(`Reconnecting... (${this.#reconnectAttempts})`)
       this.#connect()
@@ -66,7 +113,7 @@ export class Petasos {
     return this.#client
   }
 
-  getPriceUpdates(handler: (data: PriceUpdate) => void) {
+  getPriceUpdates(handler: (data: PriceUpdate | Record<Pair, PairId>) => void) {
     this.#priceUpdateHandler = handler
   }
 
