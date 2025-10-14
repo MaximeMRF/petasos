@@ -3,16 +3,11 @@
 A modern, powerful and experimental client for the [Pyth Network Hermes service](https://www.pyth.network/).
 “Petasos” refers to the wide-brimmed hat worn by the Greek god Hermes, the messenger of the gods.
 
-## Disclaimer
-
-This library is experimental and may change in the future. Use at your own risk.
-Don't hesitate to open an issue if you find a bug or have a feature request.
-
 ## Features
 
 - Subscribe to crypto feeds using human-readable trading pairs with IDE autocompletion instead of raw price IDs
 - Handles SSE (Server-Sent Events) to focus on product creation and not on connection management
-- Easy and powerful API for subscribing to price updates
+- Easy and powerful API to subscribe to price updates
 - Automatically parse prices
 
 ## Installation
